@@ -9,20 +9,9 @@ from mysql.connector import Error
 import mysql.connector
 from datetime import datetime
 
-
+# s
 load_dotenv()
 
-# connection = MySQLdb.connect(
-#     host=os.getenv("DB_HOST"),
-#     user=os.getenv("DB_USERNAME"),
-#     passwd=os.getenv("DB_PASSWORD"),
-#     db=os.getenv("DB_NAME"),
-#     autocommit=True,
-#     ssl_mode="VERIFY_IDENTITY",
-#     ssl={
-#         "ca": "/etc/ssl/cert.pem"
-#     }
-# )
 
 connection = mysql.connector.connect(
     host=os.getenv("DB_HOST"),
@@ -135,6 +124,6 @@ def getAllFiles():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
     from waitress import serve
     serve(app, host="0.0.0.0", port=8080)
