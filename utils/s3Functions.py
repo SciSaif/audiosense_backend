@@ -1,6 +1,8 @@
 import boto3
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 # Replace this with the appropriate region alias
 cloudflare_region_alias = 'apac'  # For example, 'apac' for Asia-Pacific
 
@@ -27,3 +29,12 @@ def get_signed_url(file_path):
         'Key': file_path
     }
     return s3.generate_presigned_url('get_object', Params=params, ExpiresIn=3600)
+
+
+def delete_object(file_path):
+    try:
+        s3.delete_object(Bucket=bucket_name, Key=file_path)
+        return True
+    except Exception as e:
+        print(f"Error deleting object {file_path}: {e}")
+        return False

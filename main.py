@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from utils.s3Functions import put_object, get_signed_url
+from utils.s3Functions import put_object, get_signed_url, delete_object
 import json
 
 from dotenv import load_dotenv
@@ -46,14 +46,28 @@ CORS(app)
 uploaded_files = []
 
 
+# CREATE TABLE uploaded_files (
+#     id INT AUTO_INCREMENT PRIMARY KEY,
+#     filename VARCHAR(255) NOT NULL,
+#     url VARCHAR(255) NOT NULL,
+#     duration INT NOT NULL,
+#     fileSize INT NOT NULL,
+#     fileType VARCHAR(100) NOT NULL,
+#     uploadDate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+# );
+
 @app.route('/', methods=['GET'])
 def hello_world():
     return jsonify({"message": "Hello, World!"})
 
 
+# Upload files, will also receive name of user
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
+        # check if user exists
+        # if not throw error
+
         if 'files' not in request.files:
             return jsonify({"error": "No files provided"}), 400
 
@@ -88,7 +102,7 @@ def upload_file():
             connection.commit()
         cursor.close()
 
-        return jsonify({"uploaded_urls": uploaded_urls}), 201
+        return jsonify({"message": "Files uploaded successfully!"}), 201
 
     except Exception as e:
         print(e)
@@ -100,8 +114,9 @@ def getAllFiles():
     try:
         cursor = connection.cursor()
         cursor.execute(
-            "SELECT id, filename, url, duration, fileSize, fileType FROM uploaded_files")
+            "SELECT * FROM uploaded_files")
         rows = cursor.fetchall()
+        print(rows)
         # fetch the signed url for each file
         for i, row in enumerate(rows):
             rows[i] = {
@@ -110,17 +125,38 @@ def getAllFiles():
                 "url": get_signed_url(row[2]),
                 "duration": row[3],
                 "fileSize": row[4],
-                "fileType": row[5]
+                "fileType": row[5],
+                "uploadDate": row[6]
             }
-            print(rows[i])
         cursor.close()
         return jsonify({"files": rows}), 200
 
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
-    # signed_url = get_signed_url(file_name)
-    # return jsonify({"download_url": signed_url})
+
+# Reset the database
+
+
+@app.route('/reset', methods=['GET'])
+def reset():
+    try:
+        cursor = connection.cursor()
+        # get all the files
+        cursor.execute("SELECT url FROM uploaded_files")
+        rows = cursor.fetchall()
+        # delete all the files
+        for row in rows:
+            delete_object(row[0])
+        # delete all the rows
+        cursor.execute("DELETE FROM uploaded_files")
+        connection.commit()
+        cursor.close()
+        return jsonify({"message": "Database reset successfully!"}), 200
+
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == '__main__':
