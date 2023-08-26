@@ -3,9 +3,11 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 # Replace this with the appropriate region alias
 cloudflare_region_alias = 'apac'  # For example, 'apac' for Asia-Pacific
 
+# Initialize S3 client
 s3 = boto3.client(
     's3',
     endpoint_url=f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com/",
@@ -19,11 +21,30 @@ bucket_name = 'audiosense'
 
 
 def put_object(file_path, file_data):
+    """
+    Uploads a file to the S3 bucket and returns the URL.
+
+    Args:
+        file_path (str): The desired path for the uploaded file.
+        file_data (bytes): The binary data of the file.
+
+    Returns:
+        str: The URL of the uploaded file.
+    """
     s3.put_object(Bucket=bucket_name, Key=file_path, Body=file_data)
     return f"https://{bucket_name}.{cloudflare_region_alias}.{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com/{file_path}"
 
 
 def get_signed_url(file_path):
+    """
+    Generates a presigned URL for accessing a file.
+
+    Args:
+        file_path (str): The path of the file in the S3 bucket.
+
+    Returns:
+        str: The presigned URL.
+    """
     params = {
         'Bucket': bucket_name,
         'Key': file_path
@@ -32,6 +53,15 @@ def get_signed_url(file_path):
 
 
 def delete_object(file_path):
+    """
+    Deletes a file from the S3 bucket.
+
+    Args:
+        file_path (str): The path of the file in the S3 bucket.
+
+    Returns:
+        bool: True if deletion was successful, False otherwise.
+    """
     try:
         s3.delete_object(Bucket=bucket_name, Key=file_path)
         return True
