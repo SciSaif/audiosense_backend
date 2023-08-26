@@ -2,41 +2,16 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from utils.s3Functions import put_object, get_signed_url, delete_object
+from utils.db import establish_db_connection
 import json
 
 from dotenv import load_dotenv
 from mysql.connector import Error
-import mysql.connector
 from datetime import datetime
+
 
 # s
 load_dotenv()
-
-
-connection = mysql.connector.connect(
-    host=os.getenv("DB_HOST"),
-    database=os.getenv("DB_NAME"),
-    user=os.getenv("DB_USERNAME"),
-    password=os.getenv("DB_PASSWORD"),
-    ssl_ca=os.getenv("SSL_CERT")
-)
-
-
-try:
-    if connection.is_connected():
-        cursor = connection.cursor()
-    cursor.execute("select @@version ")
-    version = cursor.fetchone()
-    if version:
-        print('Running version: ', version)
-    else:
-        print('Not connected.')
-    # get all the tables
-    # cursor.execute("select * from uploaded_files")
-    # tables = cursor.fetchall()
-    # print(tables)
-except Error as e:
-    print("Error while connecting to MySQL", e)
 
 
 app = Flask(__name__)
@@ -45,16 +20,6 @@ CORS(app)
 
 uploaded_files = []
 
-
-# CREATE TABLE uploaded_files (
-#     id INT AUTO_INCREMENT PRIMARY KEY,
-#     filename VARCHAR(255) NOT NULL,
-#     url VARCHAR(255) NOT NULL,
-#     duration INT NOT NULL,
-#     fileSize INT NOT NULL,
-#     fileType VARCHAR(100) NOT NULL,
-#     uploadDate DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
-# );
 
 @app.route('/', methods=['GET'])
 def hello_world():
@@ -67,6 +32,7 @@ def upload_file():
     try:
         # check if user exists
         # if not throw error
+        connection = establish_db_connection()
 
         if 'files' not in request.files:
             return jsonify({"error": "No files provided"}), 400
@@ -112,6 +78,8 @@ def upload_file():
 @app.route('/getFiles', methods=['GET'])
 def getAllFiles():
     try:
+        connection = establish_db_connection()
+
         cursor = connection.cursor()
         cursor.execute(
             "SELECT * FROM uploaded_files")
@@ -141,6 +109,8 @@ def getAllFiles():
 @app.route('/reset', methods=['GET'])
 def reset():
     try:
+        connection = establish_db_connection()
+
         cursor = connection.cursor()
         # get all the files
         cursor.execute("SELECT url FROM uploaded_files")
@@ -161,5 +131,5 @@ def reset():
 
 if __name__ == '__main__':
     app.run(debug=False)
-    from waitress import serve
-    serve(app, host="0.0.0.0", port=8080)
+    # from waitress import serve
+    # serve(app, host="0.0.0.0", port=8080)
